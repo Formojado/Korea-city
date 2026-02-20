@@ -3,58 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KOREA SCANNER: COLOR EDITION</title>
+  <title>KOREA SCANNER: BRIGHT EDITION</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
-    :root { --kr-red: #CD2E3A; --kr-blue: #0047A0; --neon-red: #ff3c4c; --neon-blue: #0072ff; }
-    html, body { height: 100%; margin: 0; font-family: 'Malgun Gothic', sans-serif; background: #000; overflow: hidden; }
-    #map { height: 100vh; width: 100vw; z-index: 1; filter: contrast(1.1) brightness(0.9); }
+    :root { --kr-red: #CD2E3A; --kr-blue: #0047A0; }
+    html, body { height: 100%; margin: 0; font-family: 'Malgun Gothic', 'Noto Sans TC', sans-serif; overflow: hidden; background: #f0f0f0; }
+    #map { height: 100vh; width: 100vw; z-index: 1; }
 
-    /* UI 頂部卡片 */
+    /* UI 頂部 */
     .header-ui { 
         position: absolute; top: 0; left: 0; width: 100%; height: 320px; 
-        background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%); 
+        background: linear-gradient(to bottom, rgba(255,255,255,0.9) 0%, transparent 100%); 
         z-index: 1001; pointer-events: none;
     }
     .viewport { position: relative; width: 100%; height: 280px; overflow: hidden; }
     .belt { display: flex; position: absolute; left: 50%; top: 40px; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
     
     .city-card { 
-        width: 240px; padding: 25px; margin-right: 40px; background: rgba(255,255,255,0.95); 
-        border: 4px solid #000; border-radius: 20px; opacity: 0.1; transform: scale(0.8); transition: 0.5s;
+        width: 240px; padding: 25px; margin-right: 40px; background: #fff; 
+        border: 5px solid #000; border-radius: 20px; opacity: 0.15; transform: scale(0.8); transition: 0.5s;
         display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
-        box-shadow: 10px 10px 0px var(--kr-red); position: relative;
+        box-shadow: 12px 12px 0px #000; position: relative; overflow: hidden;
     }
-    .city-card.active { opacity: 1; transform: scale(1.1); box-shadow: 15px 15px 0px var(--kr-blue); }
+    .city-card.active { opacity: 1; transform: scale(1.1); box-shadow: 15px 15px 0px var(--kr-red); }
 
-    /* 絕對正確的太極 SVG */
-    .tae-svg { width: 140px; height: 140px; position: absolute; opacity: 0.12; z-index: 0; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+    /* 精準太極 SVG */
+    .tae-svg { width: 150px; height: 150px; position: absolute; opacity: 0.1; z-index: 0; top: 50%; left: 50%; transform: translate(-50%, -50%); animation: rotateTae 15s infinite linear; }
+    @keyframes rotateTae { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
 
     .city-name-ko { font-size: 2.8rem; font-weight: 900; color: #000; z-index: 2; margin: 0; }
     .city-name-cn { font-size: 1.6rem; color: #333; font-weight: bold; z-index: 2; }
 
-    /* 遊戲數據版 */
+    /* 下方數據版 */
     .stats-panel { 
-        position: absolute; bottom: 25px; left: 25px; z-index: 1002; background: #000; 
-        color: #fff; padding: 15px 30px; border: 3px solid #fff; display: flex; gap: 30px; 
-        border-radius: 10px; box-shadow: 5px 5px 0px var(--kr-red);
+        position: absolute; bottom: 25px; left: 25px; z-index: 1002; background: #fff; 
+        padding: 15px 30px; border: 5px solid #000; display: flex; gap: 30px; 
+        border-radius: 15px; box-shadow: 8px 8px 0px #000; font-weight: 900;
     }
 
     .control-layer { position: absolute; bottom: 45px; left: 50%; transform: translateX(-50%); z-index: 1005; }
-    .btn { padding: 15px 50px; font-size: 1.3rem; font-weight: 900; cursor: pointer; border-radius: 50px; border: 3px solid #fff; color: #fff; display: none; text-shadow: 0 0 10px rgba(255,255,255,0.5); }
-    #confirmBtn { background: var(--kr-red); box-shadow: 0 0 20px var(--kr-red); }
-    #nextBtn { background: var(--kr-blue); box-shadow: 0 0 20px var(--kr-blue); }
+    .btn { padding: 18px 60px; font-size: 1.5rem; font-weight: 900; cursor: pointer; border-radius: 20px; border: 4px solid #000; color: #fff; display: none; box-shadow: 6px 6px 0px #000; }
+    #confirmBtn { background: var(--kr-red); }
+    #nextBtn { background: var(--kr-blue); }
 
     /* 彩色開頭畫面 */
-    .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2000; background: #000; }
+    .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2000; 
+        background: linear-gradient(135deg, var(--kr-red) 0%, #fff 50%, var(--kr-blue) 100%); }
     .start-box { 
-        text-align: center; border: 5px solid #fff; padding: 60px; background: radial-gradient(circle, #1a1a1a 0%, #000 100%); 
-        width: 450px; border-radius: 40px; box-shadow: 0 0 50px rgba(205, 46, 58, 0.4); position: relative; overflow: hidden;
+        text-align: center; border: 10px solid #000; padding: 60px; background: #fff; 
+        width: 450px; border-radius: 40px; box-shadow: 30px 30px 0px rgba(0,0,0,0.2); position: relative;
     }
-    .bg-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 30px 30px; z-index: -1; }
-    .scanner-line { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to bottom, transparent, var(--neon-red), transparent); height: 10px; opacity: 0.8; animation: scan 3s infinite linear; }
-    @keyframes scan { 0% { top: -10%; } 100% { top: 110%; } }
+    .scanner-line { position: absolute; top: 0; left: 0; width: 100%; height: 8px; background: #000; opacity: 0.1; animation: scan 2s infinite linear; }
+    @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
   </style>
 </head>
 <body>
@@ -62,8 +63,8 @@
   <div class="header-ui"><div class="viewport"><div class="belt" id="belt"></div></div></div>
   
   <div class="stats-panel" id="statsPanel" style="display:none">
-    <div id="score" style="font-size:1.5rem; font-weight:900;">SCORE: 0</div>
-    <div style="font-size:1.5rem; font-weight:900;"><span id="progress">0</span> / <span id="total">0</span></div>
+    <div id="score">SCORE: 0</div>
+    <div><span id="progress">0</span> / <span id="total">0</span></div>
   </div>
 
   <div class="control-layer">
@@ -73,26 +74,33 @@
 
   <div id="startModal" class="modal-overlay">
     <div class="start-box">
-      <div class="bg-grid"></div>
       <div class="scanner-line"></div>
-      <h1 style="font-size: 4rem; font-weight: 900; margin:0; color:#fff; line-height:1;">KOREA<br><span style="color:var(--neon-red)">SCANNER</span></h1>
-      <div id="countDisplay" style="font-size: 7rem; font-weight: 900; margin: 20px 0; color: #fff; text-shadow: 0 0 30px var(--neon-blue);">100</div>
-      <input type="range" id="citySlider" min="5" max="100" value="100" style="width:100%; accent-color: var(--neon-red); cursor:pointer;">
-      <button id="startBtn" style="width:100%; padding:22px; background:#fff; color:#000; font-weight:900; border:none; border-radius:50px; margin-top:30px; cursor:pointer; font-size:1.6rem; transition: 0.3s;">INITIALIZE SCAN</button>
+      <h1 style="font-size: 4rem; font-weight: 900; margin:0; line-height:1; letter-spacing:-2px;">KOREA<br>SCANNER</h1>
+      <div id="countDisplay" style="font-size: 8rem; font-weight: 900; margin: 20px 0; color: #000;">100</div>
+      <input type="range" id="citySlider" min="5" max="100" value="100" style="width:100%; accent-color: #000; cursor:pointer;">
+      <button id="startBtn" style="width:100%; padding:25px; background:#000; color:#fff; font-weight:900; border:none; border-radius:20px; margin-top:30px; cursor:pointer; font-size:1.8rem;">START MISSION</button>
     </div>
   </div>
 
   <script>
-    // 100 城市清單 (已精簡，可按前幾次版本補完)
-    const DB = [{ko:"서울",cn:"首爾",coords:[37.5665,126.9780]},{ko:"부산",cn:"釜山",coords:[35.1796,129.0756]},{ko:"인천",cn:"仁川",coords:[37.4563,126.7052]},{ko:"대구",cn:"大邱",coords:[35.8714,128.6014]},{ko:"대전",cn:"大田",coords:[36.3504,127.3845]},{ko:"광주",cn:"光州",coords:[35.1595,126.8526]},{ko:"울산",cn:"蔚山",coords:[35.5384,129.3114]},{ko:"세종",cn:"世宗",coords:[36.4800,127.2890]},{ko:"수원",cn:"水原",coords:[37.2636,127.0286]},{ko:"제주",cn:"濟州",coords:[33.4996,126.5312]}];
+    // 預設 100 城市 (此處為代表性資料，運行時會隨機排序)
+    const DB = [{ko:"서울",cn:"首爾",coords:[37.5665,126.9780]},{ko:"부산",cn:"釜山",coords:[35.1796,129.0756]},{ko:"인천",cn:"仁川",coords:[37.4563,126.7052]},{ko:"대구",cn:"大邱",coords:[35.8714,128.6014]},{ko:"대전",cn:"大田",coords:[36.3504,127.3845]},{ko:"광주",cn:"光州",coords:[35.1595,126.8526]},{ko:"울산",cn:"蔚山",coords:[35.5384,129.3114]},{ko:"세종",cn:"世宗",coords:[36.4800,127.2890]},{ko:"수원",cn:"水原",coords:[37.2636,127.0286]},{ko:"제주",cn:"濟州",coords:[33.4996,126.5312]},{ko:"포항",cn:"浦項",coords:[36.0190,129.3435]},{ko:"창원",cn:"昌原",coords:[35.2280,128.6811]},{ko:"전주",cn:"全州",coords:[35.8242,127.1480]},{ko:"청주",cn:"清州",coords:[36.6424,127.4890]},{ko:"천안",cn:"天安",coords:[36.8151,127.1139]},{ko:"강릉",cn:"江陵",coords:[37.7519,128.8761]}];
 
     let cities=[], idx=0, score=0, currentClick=null, isAnswered=false;
     let pMarker=null, tMarker=null, line=null;
 
-    const map = L.map('map',{zoomControl:false, attributionControl:false}).setView([36.2, 127.8], 7);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+    // 絕對正確的太極 SVG (上紅下藍，橫向S曲線)
+    const TAEGEUK_SVG = `
+    <svg class="tae-svg" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="50" fill="#0047A0" />
+      <path d="M0,50 A50,50 0 0,1 100,50 L50,50 Z" fill="#CD2E3A" />
+      <circle cx="25" cy="50" r="25" fill="#CD2E3A" />
+      <circle cx="75" cy="50" r="25" fill="#0047A0" />
+    </svg>`;
 
-    const TAEGEUK_SVG = `<svg class="tae-svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#0047A0"/><path d="M0,50 A50,50 0 0,1 100,50 L50,50 Z" fill="#CD2E3A"/><circle cx="25" cy="50" r="25" fill="#CD2E3A"/><circle cx="75" cy="50" r="25" fill="#0047A0"/></svg>`;
+    const map = L.map('map',{zoomControl:false, attributionControl:false}).setView([36.2, 127.8], 7);
+    // 使用明亮的街道底圖
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
     document.getElementById('citySlider').oninput = function() { document.getElementById('countDisplay').innerText = this.value; };
 
@@ -127,7 +135,7 @@
         if(isAnswered) return;
         currentClick = e.latlng;
         if(pMarker) map.removeLayer(pMarker);
-        pMarker = L.circleMarker(e.latlng, {radius:10, color:'#fff', fillColor: '#0072ff', weight:3, fillOpacity:1}).addTo(map);
+        pMarker = L.circleMarker(e.latlng, {radius:12, color:'#000', fillColor: '#fff', weight:4, fillOpacity:1}).addTo(map);
         document.getElementById('confirmBtn').style.display = 'block';
     });
 
@@ -137,8 +145,8 @@
         const target = cities[idx];
         const dist = map.distance(currentClick, target.coords) / 1000;
         const pts = Math.round(5000 * Math.pow(Math.E, -dist / 100));
-        tMarker = L.circleMarker(target.coords, {radius:12, color:'#fff', fillColor: '#ff3c4c', weight:3, fillOpacity:1}).addTo(map);
-        line = L.polyline([currentClick, target.coords], {color: '#fff', weight:2, dashArray:'5,10'}).addTo(map);
+        tMarker = L.circleMarker(target.coords, {radius:15, color:'#000', fillColor: '#CD2E3A', weight:4, fillOpacity:1}).addTo(map);
+        line = L.polyline([currentClick, target.coords], {color: '#0047A0', weight:6, dashArray:'10,15'}).addTo(map);
         score += pts;
         document.getElementById('score').innerText = `SCORE: ${score}`;
         map.flyTo(target.coords, 10);
