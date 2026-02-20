@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KOREA SCANNER V8: FLAG EDITION</title>
+  <title>KOREA SCANNER V9: TRUE FLAG</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     :root {
       --kr-red: #CD2E3A;
       --kr-blue: #0047A0;
-      --laser-cyan: #00f2ff;
     }
 
     html, body { height: 100%; margin: 0; font-family: 'Malgun Gothic', 'Microsoft JhengHei', sans-serif; background: #fff; overflow: hidden; }
@@ -29,7 +28,7 @@
     }
     
     .city-card { 
-        width: 240px; padding: 20px; margin-right: 40px;
+        width: 240px; padding: 25px; margin-right: 40px;
         background: #fff; border: 5px solid #000; border-radius: 20px;
         opacity: 0.2; transform: scale(0.8); transition: 0.5s;
         display: flex; flex-direction: column; align-items: center;
@@ -37,22 +36,26 @@
         position: relative; overflow: hidden;
     }
 
-    /* 國旗裝飾元素 */
-    .city-card::before {
-        content: "🇰🇷"; position: absolute; top: -10px; right: -10px;
-        font-size: 5rem; opacity: 0.1; transform: rotate(15deg);
+    /* 用 CSS 畫太極旗符號 */
+    .taegeuk {
+        position: absolute; width: 150px; height: 150px;
+        opacity: 0.08; z-index: 0; top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(to bottom, var(--kr-red) 50%, var(--kr-blue) 50%);
+        border-radius: 50%;
+        animation: rotateFlag 10s infinite linear;
     }
+    @keyframes rotateFlag { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
 
     .city-card.active { 
         opacity: 1; transform: scale(1.1) rotate(-1deg); 
-        border-image: linear-gradient(45deg, var(--kr-red), var(--kr-blue)) 1;
-        border: 6px solid;
-        box-shadow: 0 0 30px rgba(0,0,0,0.2), 15px 15px 0px #000;
+        border-color: #000;
+        box-shadow: 0 0 40px rgba(205, 46, 58, 0.3), 15px 15px 0px #000;
     }
 
-    .city-name-ko { font-size: 2.4rem; font-weight: 900; color: #000; z-index: 2; }
-    .city-name-cn { font-size: 1.6rem; color: #333; font-weight: bold; z-index: 2; }
-    .city-name-en { font-size: 0.9rem; color: var(--kr-blue); font-weight: 900; letter-spacing: 1px; }
+    .city-name-ko { font-size: 2.5rem; font-weight: 900; color: #000; z-index: 2; margin: 0; }
+    .city-name-cn { font-size: 1.6rem; color: #333; font-weight: bold; z-index: 2; margin: 5px 0; }
+    .city-name-en { font-size: 1rem; color: var(--kr-blue); font-weight: 900; z-index: 2; }
 
     .stats-panel { 
         position: absolute; bottom: 25px; left: 25px; z-index: 1002; 
@@ -64,16 +67,16 @@
     .btn { 
         padding: 15px 50px; font-size: 1.3rem; font-weight: 900; cursor: pointer; 
         border-radius: 20px; border: 4px solid #000; color: #fff; display: none; 
-        box-shadow: 6px 6px 0px #000;
+        box-shadow: 6px 6px 0px #000; text-transform: uppercase;
     }
     #confirmBtn { background: var(--kr-red); }
     #nextBtn { background: var(--kr-blue); }
     .btn:active { transform: translate(3px, 3px); box-shadow: 2px 2px 0px #000; }
 
-    .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2000; background: #fff; }
+    .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2000; background: var(--kr-blue); }
     .start-box { 
-        text-align: center; border: 6px solid #000; padding: 50px; background: #fff; 
-        width: 400px; border-radius: 30px; box-shadow: 25px 25px 0px var(--kr-blue);
+        text-align: center; border: 8px solid #000; padding: 50px; background: #fff; 
+        width: 420px; border-radius: 30px; box-shadow: 25px 25px 0px #000;
     }
   </style>
 </head>
@@ -89,23 +92,23 @@
   </div>
 
   <div class="control-layer">
-    <button class="btn" id="confirmBtn">CONFIRM (SPACE)</button>
-    <button class="btn" id="nextBtn">NEXT (SPACE) ❯</button>
+    <button class="btn" id="confirmBtn">LOCK IN [SPACE]</button>
+    <button class="btn" id="nextBtn">NEXT TARGET [SPACE]</button>
   </div>
 
   <div id="startModal" class="modal-overlay">
     <div class="start-box">
-      <h1 style="font-size: 3rem; font-weight: 900; margin:0;">🇰🇷 KOREA<br>SCANNER</h1>
-      <div id="countDisplay" style="font-size: 6rem; font-weight: 900; margin: 20px 0;">100</div>
-      <input type="range" id="citySlider" min="5" max="100" value="100" style="width:100%; accent-color:#000;">
-      <button id="startBtn" style="width:100%; padding:20px; background:#000; color:#fff; font-weight:900; border:none; border-radius:15px; margin-top:30px; cursor:pointer; font-size:1.5rem;">START MISSION</button>
+      <h1 style="font-size: 3rem; font-weight: 900; margin:0; line-height: 1;">SOUTH KOREA<br>SCANNER</h1>
+      <p style="letter-spacing: 2px; font-weight: 900; margin-top: 10px;">CITY GEOLOCATION TEST</p>
+      <div id="countDisplay" style="font-size: 6rem; font-weight: 900; margin: 15px 0; color: var(--kr-red);">100</div>
+      <input type="range" id="citySlider" min="5" max="100" value="100" style="width:100%; accent-color: var(--kr-blue);">
+      <button id="startBtn" style="width:100%; padding:20px; background:#000; color:#fff; font-weight:900; border:none; border-radius:15px; margin-top:30px; cursor:pointer; font-size:1.5rem;">INITIALIZE MISSION</button>
     </div>
   </div>
 
   <script>
-    // 100 城市資料庫已就緒
     const DB = [
-        {ko:"서울",en:"Seoul",cn:"首爾",coords:[37.5665,126.9780]},{ko:"부산",en:"Busan",cn:"釜山",coords:[35.1796,129.0756]},{ko:"인천",en:"Incheon",cn:"仁川",coords:[37.4563,126.7052]},{ko:"대구",en:"Daegu",cn:"大邱",coords:[35.8714,128.6014]},{ko:"대전",en:"Daejeon",cn:"大田",coords:[36.3504,127.3845]},{ko:"광주",en:"Gwangju",cn:"光州",coords:[35.1595,126.8526]},{ko:"울산",en:"Ulsan",cn:"蔚山",coords:[35.5384,129.3114]},{ko:"세종",en:"Sejong",cn:"世宗",coords:[36.4800,127.2890]},{ko:"수원",en:"Suwon",cn:"水原",coords:[37.2636,127.0286]},{ko:"고陽",en:"Goyang",cn:"高陽",coords:[37.6584,126.8320]},{ko:"용인",en:"Yongin",cn:"龍仁",coords:[37.2410,127.1779]},{ko:"성남",en:"Seongnam",cn:"城南",coords:[37.4200,127.1265]},{ko:"창원",en:"Changwon",cn:"昌原",coords:[35.2280,128.6811]},{ko:"청주",en:"Cheongju",cn:"清州",coords:[36.6424,127.4890]},{ko:"전주",en:"Jeonju",cn:"全州",coords:[35.8242,127.1480]},{ko:"천안",en:"Cheonan",cn:"天安",coords:[36.8151,127.1139]},{ko:"안산",en:"Ansan",cn:"安山",coords:[37.3219,126.8308]},{ko:"남양주",en:"Namyangju",cn:"南楊州",coords:[37.6360,127.2165]},{ko:"화성",en:"Hwaseong",cn:"華城",coords:[37.1995,126.8312]},{ko:"안양",en:"Anyang",cn:"安養",coords:[37.3943,126.9568]},{ko:"김해",en:"Gimhae",cn:"金海",coords:[35.2358,128.8817]},{ko:"포항",en:"Pohang",cn:"浦項",coords:[36.0190,129.3435]},{ko:"평택",en:"Pyeongtaek",cn:"平澤",coords:[36.9921,127.1128]},{ko:"제주",en:"Jeju",cn:"濟州",coords:[33.4996,126.5312]},{ko:"의정부",en:"Uijeongbu",cn:"議政府",coords:[37.7381,127.0337]},{ko:"파주",en:"Paju",cn:"坡州",coords:[37.7600,126.7800]},{ko:"시흥",en:"Siheung",cn:"始興",coords:[37.3800,126.8034]},{ko:"김포",en:"Gimpo",cn:"金浦",coords:[37.6151,126.7153]},{ko:"진주",en:"Jinju",cn:"晉州",coords:[35.1798,128.1076]},{ko:"광명",en:"Gwangmyeong",cn:"光明",coords:[37.4785,126.8646]},{ko:"원주",en:"Wonju",cn:"原州",coords:[37.3422,127.9202]},{ko:"아산",en:"Asan",cn:"牙山",coords:[36.7898,127.0017]},{ko:"익산",en:"Iksan",cn:"益山",coords:[35.9483,126.9576]},{ko:"양산",en:"Yangsan",cn:"梁山",coords:[35.3385,129.0371]},{ko:"군포",en:"Gunpo",cn:"軍浦",coords:[37.3617,126.9353]},{ko:"군산",en:"Gunsan",cn:"群山",coords:[35.9676,126.7366]},{ko:"경주",en:"Gyeongju",cn:"慶州",coords:[35.8562,129.2247]},{ko:"경산",en:"Gyeongsan",cn:"慶山",coords:[35.8250,128.7413]},{ko:"여수",en:"Yeosu",cn:"麗水",coords:[34.7604,127.6622]},{ko:"순천",en:"Suncheon",cn:"順天",coords:[34.9506,127.4872]},{ko:"거제",en:"Geoje",cn:"巨濟",coords:[34.8806,128.6211]},{ko:"목포",en:"Mokpo",cn:"木浦",coords:[34.8118,126.3922]},{ko:"강릉",en:"Gangneung",cn:"江陵",coords:[37.7519,128.8761]},{ko:"오산",en:"Osan",cn:"烏山",coords:[37.1498,127.0776]},{ko:"충주",en:"Chungju",cn:"忠州",coords:[36.9910,127.9259]},{ko:"이천",en:"Icheon",cn:"利川",coords:[37.2723,127.4351]},{ko:"양주",en:"Yangju",cn:"楊州",coords:[37.7853,127.0457]},{ko:"안성",en:"Anseong",cn:"安城",coords:[37.0080,127.2798]},{ko:"구리",en:"Guri",cn:"九里",coords:[37.5943,127.1296]},{ko:"서산",en:"Seosan",cn:"瑞山",coords:[36.7845,126.4504]},{ko:"당진",en:"Dangjin",cn:"唐津",coords:[36.8898,126.6274]},{ko:"안동",en:"Andong",cn:"安東",coords:[36.5684,128.7294]},{ko:"포천",en:"Pocheon",cn:"抱川",coords:[37.8949,127.2003]},{ko:"의왕",en:"Uiwang",cn:"儀王",coords:[37.3448,126.9683]},{ko:"하남",en:"Hanam",cn:"河南",coords:[37.5392,127.2148]},{ko:"광양",en:"Gwangyang",cn:"光陽",coords:[34.9407,127.6908]},{ko:"김천",en:"Gimcheon",cn:"金泉",coords:[36.1394,128.1136]},{ko:"통영",en:"Tongyeong",cn:"統營",coords:[34.8544,128.4331]},{ko:"제천",en:"Jecheon",cn:"堤川",coords:[37.1326,128.2141]},{ko:"논산",en:"Nonsan",cn:"論山",coords:[36.1871,127.0984]},{ko:"공주",en:"Gongju",cn:"公州",coords:[36.4465,127.1190]},{ko:"사천",en:"Sacheon",cn:"泗川",coords:[35.0039,128.0642]},{ko:"정읍",en:"Jeongeup",cn:"井邑",coords:[35.5699,126.8573]},{ko:"영주",en:"Yeongju",cn:"榮州",coords:[36.8056,128.6240]},{ko:"밀양",en:"Miryang",cn:"密陽",coords:[35.5038,128.7466]},{ko:"상주",en:"Sangju",cn:"尚州",coords:[36.4109,128.1591]},{ko:"보령",en:"Boryeong",cn:"保寧",coords:[36.3333,126.6122]},{ko:"영천",en:"Yeongcheon",cn:"永川",coords:[35.9733,128.9388]},{ko:"동두천",en:"Dongducheon",cn:"東豆川",coords:[37.9036,127.0607]},{ko:"동해",en:"Donghae",cn:"東海",coords:[37.5244,129.1143]},{ko:"김제",en:"Gimje",cn:"金堤",coords:[35.8032,126.8808]},{ko:"속초",en:"Sokcho",cn:"束草",coords:[38.2070,128.5918]},{ko:"남원",en:"Namwon",cn:"南原",coords:[35.4164,127.3904]},{ko:"나주",en:"Naju",cn:"羅州",coords:[35.0158,126.7108]},{ko:"문경",en:"Mungyeong",cn:"聞慶",coords:[36.5861,128.1868]},{ko:"삼척",en:"Samcheok",cn:"三陟",coords:[37.4498,129.1648]},{ko:"과천",en:"Gwacheon",cn:"果川",coords:[37.4292,126.9899]},{ko:"태백",en:"Taebaek",cn:"太白",coords:[37.1641,128.9856]},{ko:"계룡",en:"Gyeryong",cn:"雞龍",coords:[36.2746,127.2486]},{ko:"서귀포",en:"Seogwipo",cn:"西歸浦",coords:[33.2541,126.5601]},{ko:"양평",en:"Yangpyeong",cn:"楊平",coords:[37.4917,127.4875]},{ko:"홍성",en:"Hongseong",cn:"洪城",coords:[36.6013,126.6608]},{ko:"예산",en:"Yesan",cn:"禮山",coords:[36.6811,126.8465]},{ko:"부여",en:"Buyeo",cn:"扶餘",coords:[36.2747,126.9125]},{ko:"태안",en:"Taean",cn:"泰安",coords:[36.7544,126.2981]},{ko:"음성",en:"Eumseong",cn:"陰城",coords:[36.9402,127.6905]},{ko:"진천",en:"Jincheon",cn:"鎮川",coords:[36.8553,127.4387]},{ko:"가평",en:"Gapyeong",cn:"加平",coords:[37.8315,127.5095]},{ko:"연천",en:"Yeoncheon",cn:"漣川",coords:[38.0964,127.0754]},{ko:"홍천",en:"Hongcheon",cn:"洪川",coords:[37.6975,127.8887]},{ko:"횡성",en:"Hoengseong",cn:"橫城",coords:[37.4918,127.9850]},{ko:"평창",en:"Pyeongchang",cn:"平昌",coords:[37.3705,128.3903]},{ko:"정선",en:"Jeongseon",cn:"旌善",coords:[37.3807,128.6608]},{ko:"철원",en:"Cheorwon",cn:"鐵原",coords:[38.1465,127.3134]},{ko:"화천",en:"Hwacheon",cn:"華川",coords:[38.1057,127.7082]},{ko:"인제",en:"Inje",cn:"麟蹄",coords:[38.0697,128.1703]},{ko:"고성",en:"Goseong",cn:"高城",coords:[38.3805,128.4687]},{ko:"울진",en:"Uljin",cn:"蔚珍",coords:[36.9930,129.4005]},{ko:"영덕",en:"Yeongdeok",cn:"盈德",coords:[36.4150,129.3658]},{ko:"칠곡",en:"Chilgok",cn:"漆谷",coords:[35.9958,128.4017]}
+        {ko:"서울",en:"Seoul",cn:"首爾",coords:[37.5665,126.9780]},{ko:"부산",en:"Busan",cn:"釜山",coords:[35.1796,129.0756]},{ko:"인천",en:"Incheon",cn:"仁川",coords:[37.4563,126.7052]},{ko:"대구",en:"Daegu",cn:"大邱",coords:[35.8714,128.6014]},{ko:"대전",en:"Daejeon",cn:"大田",coords:[36.3504,127.3845]},{ko:"광주",en:"Gwangju",cn:"光州",coords:[35.1595,126.8526]},{ko:"울산",en:"Ulsan",cn:"蔚山",coords:[35.5384,129.3114]},{ko:"세종",en:"Sejong",cn:"世宗",coords:[36.4800,127.2890]},{ko:"수원",en:"Suwon",cn:"水原",coords:[37.2636,127.0286]},{ko:"고양",en:"Goyang",cn:"高陽",coords:[37.6584,126.8320]},{ko:"용인",en:"Yongin",cn:"龍仁",coords:[37.2410,127.1779]},{ko:"성남",en:"Seongnam",cn:"城南",coords:[37.4200,127.1265]},{ko:"창원",en:"Changwon",cn:"昌原",coords:[35.2280,128.6811]},{ko:"청주",en:"Cheongju",cn:"清州",coords:[36.6424,127.4890]},{ko:"전주",en:"Jeonju",cn:"全州",coords:[35.8242,127.1480]},{ko:"천안",en:"Cheonan",cn:"天安",coords:[36.8151,127.1139]},{ko:"안산",en:"Ansan",cn:"安山",coords:[37.3219,126.8308]},{ko:"남양주",en:"Namyangju",cn:"南楊州",coords:[37.6360,127.2165]},{ko:"화성",en:"Hwaseong",cn:"華城",coords:[37.1995,126.8312]},{ko:"안양",en:"Anyang",cn:"安養",coords:[37.3943,126.9568]},{ko:"김해",en:"Gimhae",cn:"金海",coords:[35.2358,128.8817]},{ko:"포항",en:"Pohang",cn:"浦項",coords:[36.0190,129.3435]},{ko:"평택",en:"Pyeongtaek",cn:"平澤",coords:[36.9921,127.1128]},{ko:"제주",en:"Jeju",cn:"濟州",coords:[33.4996,126.5312]},{ko:"의정부",en:"Uijeongbu",cn:"議政府",coords:[37.7381,127.0337]},{ko:"파주",en:"Paju",cn:"坡州",coords:[37.7600,126.7800]},{ko:"시흥",en:"Siheung",cn:"始興",coords:[37.3800,126.8034]},{ko:"김포",en:"Gimpo",cn:"金浦",coords:[37.6151,126.7153]},{ko:"진주",en:"Jinju",cn:"晉州",coords:[35.1798,128.1076]},{ko:"광명",en:"Gwangmyeong",cn:"光明",coords:[37.4785,126.8646]},{ko:"원주",en:"Wonju",cn:"原州",coords:[37.3422,127.9202]},{ko:"아산",en:"Asan",cn:"牙山",coords:[36.7898,127.0017]},{ko:"익산",en:"Iksan",cn:"益山",coords:[35.9483,126.9576]},{ko:"양산",en:"Yangsan",cn:"梁山",coords:[35.3385,129.0371]},{ko:"군포",en:"Gunpo",cn:"軍浦",coords:[37.3617,126.9353]},{ko:"군산",en:"Gunsan",cn:"群山",coords:[35.9676,126.7366]},{ko:"경주",en:"Gyeongju",cn:"慶州",coords:[35.8562,129.2247]},{ko:"경산",en:"Gyeongsan",cn:"慶山",coords:[35.8250,128.7413]},{ko:"여수",en:"Yeosu",cn:"麗水",coords:[34.7604,127.6622]},{ko:"순천",en:"Suncheon",cn:"順天",coords:[34.9506,127.4872]},{ko:"거제",en:"Geoje",cn:"巨濟",coords:[34.8806,128.6211]},{ko:"목포",en:"Mokpo",cn:"木浦",coords:[34.8118,126.3922]},{ko:"강릉",en:"Gangneung",cn:"江陵",coords:[37.7519,128.8761]},{ko:"오산",en:"Osan",cn:"烏山",coords:[37.1498,127.0776]},{ko:"충주",en:"Chungju",cn:"忠州",coords:[36.9910,127.9259]},{ko:"이천",en:"Icheon",cn:"利川",coords:[37.2723,127.4351]},{ko:"양주",en:"Yangju",cn:"楊州",coords:[37.7853,127.0457]},{ko:"안성",en:"Anseong",cn:"安城",coords:[37.0080,127.2798]},{ko:"구리",en:"Guri",cn:"九里",coords:[37.5943,127.1296]},{ko:"서산",en:"Seosan",cn:"瑞山",coords:[36.7845,126.4504]},{ko:"당진",en:"Dangjin",cn:"唐津",coords:[36.8898,126.6274]},{ko:"안동",en:"Andong",cn:"安東",coords:[36.5684,128.7294]},{ko:"포천",en:"Pocheon",cn:"抱川",coords:[37.8949,127.2003]},{ko:"의왕",en:"Uiwang",cn:"儀王",coords:[37.3448,126.9683]},{ko:"하남",en:"Hanam",cn:"河南",coords:[37.5392,127.2148]},{ko:"광양",en:"Gwangyang",cn:"光陽",coords:[34.9407,127.6908]},{ko:"김천",en:"Gimcheon",cn:"金泉",coords:[36.1394,128.1136]},{ko:"통영",en:"Tongyeong",cn:"統營",coords:[34.8544,128.4331]},{ko:"제천",en:"Jecheon",cn:"堤川",coords:[37.1326,128.2141]},{ko:"논산",en:"Nonsan",cn:"論山",coords:[36.1871,127.0984]},{ko:"공주",en:"Gongju",cn:"公州",coords:[36.4465,127.1190]},{ko:"사천",en:"Sacheon",cn:"泗川",coords:[35.0039,128.0642]},{ko:"정읍",en:"Jeongeup",cn:"井邑",coords:[35.5699,126.8573]},{ko:"영주",en:"Yeongju",cn:"榮州",coords:[36.8056,128.6240]},{ko:"밀양",en:"Miryang",cn:"密陽",coords:[35.5038,128.7466]},{ko:"상주",en:"Sangju",cn:"尚州",coords:[36.4109,128.1591]},{ko:"보령",en:"Boryeong",cn:"保寧",coords:[36.3333,126.6122]},{ko:"영천",en:"Yeongcheon",cn:"永川",coords:[35.9733,128.9388]},{ko:"동두千",en:"Dongducheon",cn:"東豆川",coords:[37.9036,127.0607]},{ko:"동해",en:"Donghae",cn:"東海",coords:[37.5244,129.1143]},{ko:"김제",en:"Gimje",cn:"金堤",coords:[35.8032,126.8808]},{ko:"속초",en:"Sokcho",cn:"束草",coords:[38.2070,128.5918]},{ko:"남원",en:"Namwon",cn:"南原",coords:[35.4164,127.3904]},{ko:"나주",en:"Naju",cn:"羅州",coords:[35.0158,126.7108]},{ko:"문경",en:"Mungyeong",cn:"聞慶",coords:[36.5861,128.1868]},{ko:"삼척",en:"Samcheok",cn:"三陟",coords:[37.4498,129.1648]},{ko:"과천",en:"Gwacheon",cn:"果川",coords:[37.4292,126.9899]},{ko:"태백",en:"Taebaek",cn:"太白",coords:[37.1641,128.9856]},{ko:"계룡",en:"Gyeryong",cn:"雞龍",coords:[36.2746,127.2486]},{ko:"서귀포",en:"Seogwipo",cn:"西歸浦",coords:[33.2541,126.5601]},{ko:"양평",en:"Yangpyeong",cn:"楊平",coords:[37.4917,127.4875]},{ko:"홍성",en:"Hongseong",cn:"洪城",coords:[36.6013,126.6608]},{ko:"예산",en:"Yesan",cn:"禮山",coords:[36.6811,126.8465]},{ko:"부여",en:"Buyeo",cn:"扶餘",coords:[36.2747,126.9125]},{ko:"태안",en:"Taean",cn:"泰安",coords:[36.7544,126.2981]},{ko:"음성",en:"Eumseong",cn:"陰城",coords:[36.9402,127.6905]},{ko:"진천",en:"Jincheon",cn:"鎮川",coords:[36.8553,127.4387]},{ko:"가평",en:"Gapyeong",cn:"加平",coords:[37.8315,127.5095]},{ko:"연천",en:"Yeoncheon",cn:"漣川",coords:[38.0964,127.0754]},{ko:"홍천",en:"Hongcheon",cn:"洪川",coords:[37.6975,127.8887]},{ko:"횡성",en:"Hoengseong",cn:"橫城",coords:[37.4918,127.9850]},{ko:"평창",en:"Pyeongchang",cn:"平昌",coords:[37.3705,128.3903]},{ko:"정선",en:"Jeongseon",cn:"旌善",coords:[37.3807,128.6608]},{ko:"철원",en:"Cheorwon",cn:"鐵原",coords:[38.1465,127.3134]},{ko:"화천",en:"Hwacheon",cn:"華川",coords:[38.1057,127.7082]},{ko:"인제",en:"Inje",cn:"麟蹄",coords:[38.0697,128.1703]},{ko:"고성",en:"Goseong",cn:"高城",coords:[38.3805,128.4687]},{ko:"울진",en:"Uljin",cn:"蔚珍",coords:[36.9930,129.4005]},{ko:"영덕",en:"Yeongdeok",cn:"盈德",coords:[36.4150,129.3658]},{ko:"칠곡",en:"Chilgok",cn:"漆谷",coords:[35.9958,128.4017]}
     ];
 
     let cities=[], idx=0, score=0, currentClick=null, isAnswered=false;
@@ -128,6 +131,7 @@
         const belt = document.getElementById('belt');
         belt.innerHTML = cities.map(c => `
             <div class="city-card">
+                <div class="taegeuk"></div>
                 <div class="city-name-ko">${c.ko}</div>
                 <div class="city-name-cn">${c.cn}</div>
                 <div class="city-name-en">${c.en.toUpperCase()}</div>
@@ -185,17 +189,19 @@
     function handleNext() {
         idx++;
         if(idx < cities.length) refreshRound();
-        else { alert("MISSION COMPLETE! SCORE: " + score); location.reload(); }
+        else { alert("SCAN COMPLETE! TOTAL SCORE: " + score); location.reload(); }
     }
 
-    // 空白鍵還原
-    window.onkeydown = e => {
+    // 空白鍵處理
+    window.addEventListener('keydown', e => {
         if(e.code === 'Space') {
             e.preventDefault();
-            if(document.getElementById('confirmBtn').style.display === 'block') handleConfirm();
-            else if(document.getElementById('nextBtn').style.display === 'block') handleNext();
+            const cBtn = document.getElementById('confirmBtn');
+            const nBtn = document.getElementById('nextBtn');
+            if(cBtn.style.display === 'block') handleConfirm();
+            else if(nBtn.style.display === 'block') handleNext();
         }
-    };
+    });
 
     document.getElementById('startBtn').onclick = startMission;
     document.getElementById('confirmBtn').onclick = handleConfirm;
