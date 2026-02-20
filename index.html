@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Japan Speedrun 100</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --primary: #5eead4;
+      --accent: #f43f5e;
+      --bg-glass: rgba(15, 23, 42, 0.9);
+      --text-en: #e2e8f0; 
+    }
+
+    html, body { height: 100%; margin: 0; font-family: 'Inter', "Hiragino Sans", "Yu Gothic", sans-serif; background: #000; overflow: hidden; }
+    #map { height: 100vh; width: 100vw; z-index: 1; cursor: crosshair; }
+
+    .header-ui { position: absolute; top: 0; left: 0; width: 100%; height: 160px; background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%); z-index: 1001; pointer-events: none; }
+    .conveyor-viewport { position: absolute; top: 30px; left: 50%; transform: translateX(-50%); width: 100%; height: 130px; overflow: hidden; }
+    .conveyor-belt { display: flex; align-items: center; position: absolute; left: 50%; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .city-card { min-width: 320px; text-align: center; opacity: 0.1; transform: scale(0.8); transition: 0.5s; }
+    .city-card.active { opacity: 1; transform: scale(1.1); }
+
+    .city-name-en { font-size: 1.1rem; color: var(--text-en); font-weight: 800; letter-spacing: 5px; text-transform: uppercase; display: block; margin-bottom: -5px; }
+    .city-name-jp { font-size: 4.2rem; font-weight: 900; color: #fff; display: block; text-shadow: 0 0 10px rgba(0,0,0,1), 0 4px 15px rgba(0,0,0,1); }
+
+    .stats-panel { position: absolute; bottom: 30px; left: 30px; z-index: 1002; background: var(--bg-glass); padding: 22px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(15px); color: #fff; min-width: 180px; }
+    .stat-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0; position: relative; }
+    .stat-label { font-size: 0.7rem; color: #94a3b8; font-weight: 800; }
+    .stat-value { font-size: 1.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; color: var(--primary); transition: 0.2s; }
+    .score-bump { transform: scale(1.3); color: #fff; text-shadow: 0 0 10px var(--primary); }
+
+    .fly-particle { position: fixed; z-index: 9999; pointer-events: none; background: rgba(0, 0, 0, 0.85); color: var(--primary); font-weight: 900; font-size: 1.8rem; padding: 5px 15px; border-radius: 10px; border: 2px solid var(--primary); box-shadow: 0 0 20px rgba(0,0,0,0.5); transition: all 0.9s cubic-bezier(0.5, -0.3, 0.7, 0.1); }
+
+    #confirmContainer { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); z-index: 1005; display: none; }
+    .btn-confirm { background: #fff; color: #000; border: none; padding: 18px 60px; border-radius: 12px; font-size: 1.2rem; font-weight: 900; cursor: pointer; pointer-events: auto; }
+
+    .modal-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 2000; background: url('https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?q=80&w=2070&auto=format&fit=crop') center/cover no-repeat; }
+    .modal-overlay::before { content: ""; position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4); z-index: -1; }
+    .modal-box { text-align: center; padding: 50px; background: rgba(17, 24, 39, 0.85); border-radius: 30px; width: 420px; color: #fff; backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+    .btn-start { background: var(--primary); color: #000; border: none; padding: 18px; width: 100%; border-radius: 12px; font-size: 1.2rem; font-weight: 900; cursor: pointer; margin-top: 30px; }
+    
+    .final-stat-item { margin: 15px 0; font-size: 1.2rem; color: #94a3b8; font-weight: 600; }
+    .final-stat-item b { color: #fff; font-size: 2rem; display: block; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="header-ui"><div class="conveyor-viewport" id="viewport" style="display:none"><div class="conveyor-belt" id="belt"></div></div></div>
+  <div class="stats-panel" id="statsPanel" style="display:none">
+    <div class="stat-row"><span class="stat-label">SCORE</span><span id="score" class="stat-value">0</span></div>
+    <div class="stat-row"><span class="stat-label">TIME</span><span id="time" class="stat-value">00:00</span></div>
+    <div class="stat-row"><span class="stat-label">PROGRESS</span><span class="stat-value"><span id="progress">0</span><span style="color:#444">/</span><span id="total">0</span></span></div>
+  </div>
+  <div id="confirmContainer"><button class="btn-confirm" id="confirmBtn">CONFIRM [SPACE]</button></div>
+
+  <div id="startModal" class="modal-overlay"><div class="modal-box"><h1>Japan Speedrun</h1><div style="margin:40px 0;"><div style="font-size: 5rem; font-weight:900; color:var(--primary)" id="countDisplay">50</div><input type="range" id="citySlider" min="5" max="100" value="50" style="width:100%;"></div><button id="startBtn" class="btn-start">START (ENTER)</button></div></div>
+  
+  <div id="endModal" class="modal-overlay" style="display:none; background:rgba(0,0,0,0.95)">
+    <div class="modal-box">
+      <h2 style="font-size: 2.5rem; margin-bottom: 20px;">COMPLETE</h2>
+      <div class="final-stat-item">FINAL SCORE <b id="finalScoreDisplay" style="color:var(--primary)">0</b></div>
+      <div class="final-stat-item">TIME ELAPSED <b id="finalTimeDisplay">00:00</b></div>
+      <button onclick="location.reload()" class="btn-start">PLAY AGAIN</button>
+    </div>
+  </div>
+
+  <script>
+    const DB = [
+      {jp:"東京",en:"Tokyo",coords:[35.6813,139.7671]},{jp:"横浜",en:"Yokohama",coords:[35.4433,139.6358]},{jp:"大阪",en:"Osaka",coords:[34.6937,135.5023]},{jp:"名古屋",en:"Nagoya",coords:[35.1815,136.9066]},{jp:"札幌",en:"Sapporo",coords:[43.0611,141.3564]},{jp:"福岡",en:"Fukuoka",coords:[33.5904,130.4017]},{jp:"神戸",en:"Kobe",coords:[34.6901,135.1955]},{jp:"京都",en:"Kyoto",coords:[35.0116,135.7681]},{jp:"広島",en:"Hiroshima",coords:[34.3853,132.4553]},{jp:"仙台",en:"Sendai",coords:[38.2682,140.8694]},{jp:"金沢",en:"Kanazawa",coords:[36.5613,136.6562]},{jp:"鹿児島",en:"Kagoshima",coords:[31.5967,130.5571]},{jp:"奈良",en:"Nara",coords:[34.6851,135.8048]},{jp:"那覇",en:"Naha",coords:[26.2124,127.6809]},{jp:"函館",en:"Hakodate",coords:[41.7687,140.7288]},{jp:"松山",en:"Matsuyama",coords:[33.8392,132.765]},{jp:"熊本",en:"Kumamoto",coords:[32.8032,130.7079]},{jp:"岡山",en:"Okayama",coords:[34.6551,133.9195]},{jp:"静岡",en:"Shizuoka",coords:[34.9756,138.3825]},{jp:"新潟",en:"Niigata",coords:[37.9162,139.0364]},
+      {jp:"青森",en:"Aomori",coords:[40.8243,140.74]},{jp:"秋田",en:"Akita",coords:[39.7198,140.1023]},{jp:"盛岡",en:"Morioka",coords:[39.7036,141.1527]},{jp:"山形",en:"Yamagata",coords:[38.2554,140.3396]},{jp:"福島",en:"Fukushima",coords:[37.7608,140.4747]},{jp:"水戸",en:"Mito",coords:[36.3659,140.4714]},{jp:"宇都宮",en:"Utsunomiya",coords:[36.5551,139.8826]},{jp:"前橋",en:"Maebashi",coords:[36.3895,139.0634]},{jp:"さいたま",en:"Saitama",coords:[35.8617,139.6455]},{jp:"千葉",en:"Chiba",coords:[35.6073,140.1063]},{jp:"長野",en:"Nagano",coords:[36.6485,138.1942]},{jp:"岐阜",en:"Gifu",coords:[35.4233,136.7607]},{jp:"津",en:"Tsu",coords:[34.7186,136.5052]},{jp:"大津",en:"Otsu",coords:[35.0177,135.8549]},{jp:"和歌山",en:"Wakayama",coords:[34.2305,135.1708]},{jp:"鳥取",en:"Tottori",coords:[35.5011,134.2351]},{jp:"松江",en:"Matsue",coords:[35.4681,133.0484]},{jp:"高松",en:"Takamatsu",coords:[34.3428,134.0466]},{jp:"徳島",en:"Tokushima",coords:[34.0703,134.5548]},{jp:"高知",en:"Kochi",coords:[33.5597,133.5311]},{jp:"佐賀",en:"Saga",coords:[33.2635,130.3008]},{jp:"長崎",en:"Nagasaki",coords:[32.7501,129.8773]},{jp:"大分",en:"Oita",coords:[33.2396,131.6097]},{jp:"宮崎",en:"Miyazaki",coords:[31.9077,131.4202]},{jp:"旭川",en:"Asahikawa",coords:[43.7706,142.3648]},{jp:"釧路",en:"Kushiro",coords:[42.9849,144.3818]},{jp:"小樽",en:"Otaru",coords:[43.1907,140.9946]},{jp:"八戶",en:"Hachinohe",coords:[40.5122,141.4883]},{jp:"郡山",en:"Koriyama",coords:[37.398,140.3888]},{jp:"いわき",en:"Iwaki",coords:[37.0504,140.8877]},{jp:"高崎",en:"Takasaki",coords:[36.3219,139.0033]},{jp:"川越",en:"Kawagoe",coords:[35.9145,139.482]},{jp:"船橋",en:"Funabashi",coords:[35.6947,139.9826]},{jp:"相模原",en:"Sagamihara",coords:[35.572,139.3741]},{jp:"橫須賀",en:"Yokosuka",coords:[35.2815,139.6675]},{jp:"富山",en:"Toyama",coords:[36.6953,137.2113]},{jp:"福井",en:"Fukui",coords:[36.0641,136.2196]},{jp:"甲府",en:"Kofu",coords:[35.6621,138.5683]},{jp:"豐田",en:"Toyota",coords:[35.0824,137.1562]},{jp:"堺",en:"Sakai",coords:[34.5732,135.4831]},{jp:"姬路",en:"Himeji",coords:[34.8151,134.6853]},
+      {jp:"石巻",en:"Ishinomaki",coords:[38.4344,141.3029]},{jp:"鶴岡",en:"Tsuruoka",coords:[38.725,139.824]},{jp:"土浦",en:"Tuchiura",coords:[36.078,140.201]},{jp:"所澤",en:"Tokorozawa",coords:[35.789,139.468]},{jp:"柏",en:"Kashiwa",coords:[35.862,139.977]},{jp:"八王子",en:"Hachioji",coords:[35.655,139.336]},{jp:"町田",en:"Machida",coords:[35.546,139.446]},{jp:"藤澤",en:"Fujisawa",coords:[35.339,139.491]},{jp:"厚木",en:"Atsugi",coords:[35.441,139.362]},{jp:"長岡",en:"Nagaoka",coords:[37.446,138.851]},{jp:"上越",en:"Joetsu",coords:[37.149,138.236]},{jp:"高岡",en:"Takaoka",coords:[36.745,137.015]},{jp:"松本",en:"Matsumoto",coords:[36.233,137.971]},{jp:"沼津",en:"Numazu",coords:[35.102,138.86]},{jp:"濱松",en:"Hamamatsu",coords:[34.710,137.726]},{jp:"一宮",en:"Ichinomiya",coords:[35.301,136.802]},{jp:"岡崎",en:"Okazaki",coords:[34.956,137.159]},{jp:"四日市",en:"Yokkaichi",coords:[34.966,136.617]},{jp:"吹田",en:"Suita",coords:[34.759,135.516]},{jp:"東大阪",en:"Higashiosaka",coords:[34.679,135.600]},{jp:"枚方",en:"Hirakata",coords:[34.816,135.65]},{jp:"西宮",en:"Nishinomiya",coords:[34.737,135.341]},{jp:"尼崎",en:"Amagasaki",coords:[34.734,135.41]},{jp:"明石",en:"Akashi",coords:[34.643,134.997]},{jp:"倉敷",en:"Kurashiki",coords:[34.585,133.771]},{jp:"福山",en:"Fukuyama",coords:[34.485,133.362]},{jp:"下關",en:"Shimonoseki",coords:[33.957,130.941]},{jp:"久留米",en:"Kurume",coords:[33.319,130.508]},{jp:"佐世保",en:"Sasebo",coords:[33.179,129.715]},{jp:"別府",en:"Beppu",coords:[33.284,131.491]},{jp:"延岡",en:"Nobeoka",coords:[32.582,131.664]},{jp:"霧島",en:"Kirishima",coords:[31.741,130.763]},{jp:"稚內",en:"Wakkanai",coords:[45.415,141.673]},{jp:"網走",en:"Abashiri",coords:[44.020,144.273]},{jp:"室蘭",en:"Muroran",coords:[42.315,140.973]},{jp:"石垣",en:"Ishigaki",coords:[24.341,124.155]},{jp:"宮古島",en:"Miyakojima",coords:[24.805,125.281]},{jp:"名護",en:"Nago",coords:[26.591,127.977]},{jp:"尾道",en:"Onomichi",coords:[34.409,133.203]}
+    ];
+
+    let cities=[], idx=0, score=0, startTime, timer, started=false, isProcessing=false;
+    let currentClickPos = null, playerMarker = null, targetMarker = null, connectorLine = null;
+
+    const map = L.map('map',{zoomControl:false, attributionControl: false}).setView([37, 137], 5);
+    L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3']}).addTo(map);
+
+    function startGame() {
+      if(started) return;
+      let count = parseInt(document.getElementById('citySlider').value);
+      count = Math.min(count, DB.length);
+      cities = [...DB].sort(()=>Math.random()-0.5).slice(0, count);
+      document.getElementById('total').textContent = cities.length;
+      document.getElementById('startModal').style.display = 'none';
+      document.getElementById('viewport').style.display = 'block';
+      document.getElementById('statsPanel').style.display = 'block';
+      const belt = document.getElementById('belt');
+      belt.innerHTML = '';
+      cities.forEach(c => {
+        const el = document.createElement('div'); el.className = 'city-card';
+        el.innerHTML = `<span class="city-name-en">${c.en}</span><span class="city-name-jp">${c.jp}</span>`;
+        belt.appendChild(el);
+      });
+      started = true; startTime = Date.now();
+      timer = setInterval(() => {
+        const d = Date.now() - startTime;
+        document.getElementById('time').textContent = `${Math.floor(d/60000).toString().padStart(2,'0')}:${Math.floor((d%60000)/1000).toString().padStart(2,'0')}`;
+      }, 1000);
+      updateConveyor();
+    }
+
+    function clearLayers() {
+      if(playerMarker) map.removeLayer(playerMarker);
+      if(targetMarker) map.removeLayer(targetMarker);
+      if(connectorLine) map.removeLayer(connectorLine);
+      playerMarker = targetMarker = connectorLine = null;
+    }
+
+    function updateConveyor() {
+      document.getElementById('belt').style.transform = `translateX(${-(idx * 320) - 160}px)`;
+      document.querySelectorAll('.city-card').forEach((card, i) => card.classList.toggle('active', i === idx));
+      document.getElementById('progress').textContent = idx + 1;
+      isProcessing = false;
+    }
+
+    function haversine(a, b) {
+      const R = 6371;
+      const dLat = (b[0]-a[0]) * Math.PI/180;
+      const dLon = (b[1]-a[1]) * Math.PI/180;
+      const aa = Math.sin(dLat/2)**2 + Math.cos(a[0]*Math.PI/180)*Math.cos(b[0]*Math.PI/180)*Math.sin(dLon/2)**2;
+      return R * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1-aa));
+    }
+
+    map.on('click', e => {
+      if(!started || isProcessing) return;
+      currentClickPos = e.latlng;
+      if(playerMarker) map.removeLayer(playerMarker);
+      playerMarker = L.circleMarker(e.latlng, {radius: 12, color: '#fff', fillColor: '#f43f5e', weight: 4, fillOpacity: 1}).addTo(map);
+      document.getElementById('confirmContainer').style.display = 'block';
+    });
+
+    function submitAnswer() {
+      if(!started || !currentClickPos || isProcessing) return;
+      isProcessing = true;
+      const city = cities[idx];
+      const dist = haversine([currentClickPos.lat, currentClickPos.lng], city.coords);
+      const points = Math.round(5000 * Math.pow(Math.E, -dist / 200));
+      document.getElementById('confirmContainer').style.display = 'none';
+
+      targetMarker = L.circleMarker(city.coords, {radius: 12, color: '#fff', fillColor: '#5eead4', weight: 4, fillOpacity: 1}).addTo(map);
+      connectorLine = L.polyline([currentClickPos, city.coords], {color: '#fff', weight: 3, dashArray: '10, 10'}).addTo(map);
+
+      const clickPoint = map.latLngToContainerPoint(currentClickPos);
+      const scoreBox = document.getElementById('score').getBoundingClientRect();
+      const particle = document.createElement('div');
+      particle.className = 'fly-particle';
+      particle.textContent = `+${points}`;
+      particle.style.left = (clickPoint.x - 40) + 'px';
+      particle.style.top = (clickPoint.y - 20) + 'px';
+      document.body.appendChild(particle);
+
+      setTimeout(() => {
+        particle.style.left = scoreBox.left + 'px';
+        particle.style.top = scoreBox.top + 'px';
+        particle.style.opacity = '0';
+        particle.style.transform = 'scale(0.3)';
+      }, 50);
+
+      setTimeout(() => {
+        score += points;
+        const scoreEl = document.getElementById('score');
+        scoreEl.textContent = score;
+        scoreEl.classList.add('score-bump');
+        setTimeout(() => scoreEl.classList.remove('score-bump'), 300);
+        particle.remove();
+      }, 900);
+
+      map.flyTo(city.coords, 8, {duration: 0.5});
+      
+      setTimeout(() => {
+        idx++;
+        clearLayers();
+        if(idx < cities.length) { 
+          updateConveyor(); 
+          map.flyTo([37, 137], 5, {duration: 0.6}); 
+        } else { 
+          endGame(); 
+        }
+      }, 2200);
+    }
+
+    function endGame() {
+      started = false; 
+      clearInterval(timer);
+      const finalTime = document.getElementById('time').textContent;
+      document.getElementById('finalScoreDisplay').textContent = score;
+      document.getElementById('finalTimeDisplay').textContent = finalTime;
+      document.getElementById('endModal').style.display = 'flex';
+    }
+
+    window.addEventListener('keydown', e => {
+      if(e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        if(!started) startGame();
+        else if(document.getElementById('confirmContainer').style.display === 'block') submitAnswer();
+      }
+    });
+
+    document.getElementById('citySlider').oninput = function() { document.getElementById('countDisplay').textContent = this.value; };
+    document.getElementById('confirmBtn').onclick = submitAnswer;
+    document.getElementById('startBtn').onclick = startGame;
+  </script>
+</body>
+</html>
